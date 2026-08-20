@@ -1,8 +1,11 @@
 {
+  "rewrites": [
+    { "source": "/((?!assets/).*)", "destination": "/index.html" }
+  ],
   "redirects": [
     {
       "source": "/download",
-      "destination": "https://github.com/itszubariel/ZapQR/releases/download/v1.0.0/ZapQR-v1.0.0.apk",
+      "destination": "https://github.com/itszubariel/ZapQR/releases/latest",
       "permanent": false
     }
   ]
