@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#0a0a0a" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="icon" href="/zapqr.png" type="image/x-icon" />
+
+    <title>ZapQR</title>
+    <style>
+      html, body { background: #111; }
+      body { visibility: hidden; }
+      .top-logo { width: 40px; height: 40px; object-fit: contain; }
+    </style>
+  </head>
+  <body>
+    <div class="phone-shell">
+      <div class="phone-bezel">
+        <div class="dynamic-island"></div>
+        <div class="phone-screen">
+          <div id="app">
+            <header id="top-bar">
+              <div class="top-brand">
+                <img src="/zapqr.png" alt="ZapQR" class="top-logo" />
+                <div>
+                  <h1 id="top-title">ZapQR</h1>
+                  <span id="top-sub">Scan a code</span>
+                </div>
+              </div>
+            </header>
+            <nav id="tabs">
+              <button class="tab active" data-tab="scan">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path d="M3 7V5a2 2 0 0 1 2-2h2" />
+                  <path d="M17 3h2a2 2 0 0 1 2 2v2" />
+                  <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
+                  <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+                  <line x1="7" y1="12" x2="17" y2="12" />
+                </svg>
+                <span>Scan</span>
+              </button>
+              <button class="tab" data-tab="generate">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <rect x="3" y="3" width="7" height="7" rx="1" />
+                  <rect x="14" y="3" width="7" height="7" rx="1" />
+                  <rect x="3" y="14" width="7" height="7" rx="1" />
+                  <rect x="14" y="14" width="4" height="4" rx="0.5" />
+                </svg>
+                <span>Generate</span>
+              </button>
+              <button class="tab" data-tab="history">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path d="M12 8v4l3 3" />
+                  <circle cx="12" cy="12" r="9" />
+                </svg>
+                <span>History</span>
+              </button>
+              <button class="tab" data-tab="about">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="16" x2="12" y2="12" />
+                  <line x1="12" y1="8" x2="12.01" y2="8" />
+                </svg>
+                <span>About</span>
+              </button>
+            </nav>
+            <main id="content"></main>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
