@@ -20,7 +20,7 @@ export function initAbout(container: HTMLElement) {
           </div>
           <div>
             <div class="about-feature-title">QR Scanner</div>
-            <div class="about-feature-desc">Scan any QR code with your camera in real time.</div>
+            <div class="about-feature-desc">Scan any QR code with your camera. Pinch-to-zoom and flashlight support.</div>
           </div>
         </div>
         <div class="about-feature">
@@ -34,7 +34,7 @@ export function initAbout(container: HTMLElement) {
           </div>
           <div>
             <div class="about-feature-title">QR Generator</div>
-            <div class="about-feature-desc">Create QR codes with custom colors. Download as PNG.</div>
+            <div class="about-feature-desc">Generate QR codes for Text, URL, Phone, WiFi, Contact, Email, and SMS. Custom colors, module styles, error correction, and logo overlay.</div>
           </div>
         </div>
         <div class="about-feature">
