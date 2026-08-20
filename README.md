@@ -44,7 +44,7 @@ npm run preview
 ./build-apk.sh
 ```
 
-The APK will be output to `apk/ZapQR-v0.1.0.apk`.
+The APK will be output to `apk/ZapQR-v1.1.0.apk`.
 
 ## License
 
