@@ -7,8 +7,8 @@ A free, open-source QR code scanner and generator. No ads, no tracking, no accou
 
 ## Features
 
-- **QR Scanner**: Scan any QR code with your camera in real time
-- **QR Generator**: Create QR codes with custom foreground and background colors, download as PNG
+- **QR Scanner**: Scan any QR code with your camera in real time, with pinch-to-zoom and flashlight toggle
+- **QR Generator**: Create QR codes with multiple type templates (Text, URL, Phone, WiFi, Contact, Email, SMS), custom colors, module styles (Square, Rounded, Dots), error correction levels, and logo overlay
 - **History**: Keep track of your recent scans and generations
 - **Fully Private**: Everything runs locally. No data ever leaves your device
 
