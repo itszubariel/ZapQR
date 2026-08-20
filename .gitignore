@@ -1,0 +1,16 @@
+node_modules
+dist
+*.local
+
+android/
+local.properties
+apk/
+android.keystore
+keystore.properties
+
+.vscode
+.idea
+.DS_Store
+*.sw?
+
+note.txt
