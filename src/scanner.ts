@@ -4,6 +4,15 @@ let scanner: Html5Qrcode | null = null;
 let scanned = false;
 let cameraReady = false;
 let readyTimeout: ReturnType<typeof setTimeout> | null = null;
+let videoStream: MediaStream | null = null;
+let videoEl: HTMLVideoElement | null = null;
+let torchOn = false;
+let zoomLevel = 1;
+let minZoom = 1;
+let maxZoom = 1;
+let useCssZoom = false;
+let pinchStartDist = 0;
+let pinchStartZoom = 1;
 
 export function pauseScanner() {
   scanned = false;
@@ -26,6 +35,8 @@ export function resumeScanner() {
 export function stopScanner() {
   scanned = false;
   cameraReady = false;
+  torchOn = false;
+  zoomLevel = 1;
   if (readyTimeout) {
     clearTimeout(readyTimeout);
     readyTimeout = null;
@@ -35,6 +46,8 @@ export function stopScanner() {
     scanner.stop();
   } catch {}
   scanner = null;
+  videoStream = null;
+  videoEl = null;
 }
 
 export function initScanner(container: HTMLElement) {
@@ -56,22 +69,32 @@ export function initScanner(container: HTMLElement) {
           </div>
         </div>
       </div>
-      <div class="scan-state" id="scan-state">Point camera at a QR code</div>
-      <div class="scan-info">
-        <div class="scan-info-title">How it works</div>
-        <div class="scan-info-item">
-          <span class="scan-info-num">1</span>
-          <span>Point your camera at any QR code</span>
-        </div>
-        <div class="scan-info-item">
-          <span class="scan-info-num">2</span>
-          <span>Hold steady while it detects the code</span>
-        </div>
-        <div class="scan-info-item">
-          <span class="scan-info-num">3</span>
-          <span>Copy the result or open the link</span>
-        </div>
+      <div class="scanner-controls" id="scanner-controls">
+        <button class="scanner-ctrl-btn" id="btn-zoom-out" aria-label="Zoom out">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            <line x1="8" y1="11" x2="14" y2="11"/>
+          </svg>
+        </button>
+        <span class="zoom-label" id="zoom-label">1.0x</span>
+        <button class="scanner-ctrl-btn" id="btn-zoom-in" aria-label="Zoom in">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            <line x1="11" y1="8" x2="11" y2="14"/>
+            <line x1="8" y1="11" x2="14" y2="11"/>
+          </svg>
+        </button>
+        <button class="scanner-ctrl-btn" id="btn-torch" aria-label="Toggle flashlight">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="torch-icon">
+            <path d="M9 18h6"/>
+            <path d="M10 22h4"/>
+            <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/>
+          </svg>
+        </button>
       </div>
+      <div class="scan-state" id="scan-state">Point camera at a QR code</div>
       <div class="scan-footer">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12">
           <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
@@ -111,6 +134,13 @@ export function initScanner(container: HTMLElement) {
       video.setAttribute("playsinline", "true");
       video.setAttribute("webkit-playsinline", "true");
 
+      videoEl = video;
+      videoStream = video.srcObject as MediaStream;
+      detectZoomRange();
+      setupTorchButton();
+      setupZoomButtons();
+      setupPinchZoom();
+
       if (video.readyState >= 3) {
         onCameraReady();
         return;
@@ -125,6 +155,8 @@ export function initScanner(container: HTMLElement) {
     })
     .catch(() => {
       showOverlay(false);
+      const controls = document.getElementById("scanner-controls");
+      if (controls) controls.style.display = "none";
       const wrap = document.getElementById("vf-wrap")!;
       wrap.innerHTML = `
         <div class="cam-error">
@@ -156,6 +188,126 @@ function showOverlay(visible: boolean) {
   const el = document.getElementById("scanner-overlay");
   if (!el) return;
   el.classList.toggle("hidden", !visible);
+}
+
+function detectZoomRange() {
+  if (!videoStream) return;
+  const track = videoStream.getVideoTracks()[0];
+  if (!track) return;
+  const caps = track.getCapabilities?.() as any;
+  if (caps?.zoom && caps.zoom.max > 1) {
+    minZoom = caps.zoom.min;
+    maxZoom = caps.zoom.max;
+    useCssZoom = false;
+  } else {
+    useCssZoom = true;
+    minZoom = 1;
+    maxZoom = 5;
+  }
+  zoomLevel = 1;
+  updateZoomLabel();
+}
+
+function setZoom(value: number) {
+  const clamped =
+    Math.round(Math.min(maxZoom, Math.max(minZoom, value)) * 10) / 10;
+
+  if (useCssZoom) {
+    zoomLevel = clamped;
+    if (videoEl) {
+      videoEl.style.transform = `scale(${zoomLevel})`;
+      videoEl.style.transformOrigin = "center center";
+    }
+  } else {
+    if (!videoStream) return;
+    const track = videoStream.getVideoTracks()[0];
+    if (!track) return;
+    zoomLevel = clamped;
+    track
+      .applyConstraints({ advanced: [{ zoom: zoomLevel } as any] })
+      .catch(() => {});
+  }
+  updateZoomLabel();
+}
+
+function updateZoomLabel() {
+  const label = document.getElementById("zoom-label");
+  if (label) label.textContent = `${zoomLevel.toFixed(1)}x`;
+}
+
+function setupTorchButton() {
+  const btn = document.getElementById("btn-torch");
+  if (!btn) return;
+  btn.addEventListener("click", toggleTorch);
+}
+
+async function toggleTorch() {
+  if (!videoStream) return;
+  const track = videoStream.getVideoTracks()[0];
+  if (!track) return;
+  const caps = track.getCapabilities?.() as any;
+  if (!caps?.torch) return;
+  torchOn = !torchOn;
+  await track
+    .applyConstraints({ advanced: [{ torch: torchOn } as any] })
+    .catch(() => {});
+  const icon = document.getElementById("torch-icon");
+  const btn = document.getElementById("btn-torch");
+  if (btn) btn.classList.toggle("active", torchOn);
+  if (icon) {
+    if (torchOn) {
+      icon.innerHTML = `<path d="M13 2L3 14h9l-1 10 10-12h-9l1-10z"/>`;
+    } else {
+      icon.innerHTML = `
+        <path d="M9 18h6"/>
+        <path d="M10 22h4"/>
+        <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/>
+      `;
+    }
+  }
+}
+
+function setupZoomButtons() {
+  const inBtn = document.getElementById("btn-zoom-in");
+  const outBtn = document.getElementById("btn-zoom-out");
+  if (inBtn) inBtn.addEventListener("click", () => setZoom(zoomLevel + 0.5));
+  if (outBtn) outBtn.addEventListener("click", () => setZoom(zoomLevel - 0.5));
+}
+
+function setupPinchZoom() {
+  const wrap = document.getElementById("vf-wrap");
+  if (!wrap) return;
+
+  wrap.addEventListener(
+    "touchstart",
+    (e) => {
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        pinchStartDist = getTouchDistance(e.touches);
+        pinchStartZoom = zoomLevel;
+      }
+    },
+    { passive: false },
+  );
+
+  wrap.addEventListener(
+    "touchmove",
+    (e) => {
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        const dist = getTouchDistance(e.touches);
+        const scale = dist / pinchStartDist;
+        setZoom(pinchStartZoom * scale);
+      }
+    },
+    { passive: false },
+  );
+}
+
+function getTouchDistance(touches: TouchList): number {
+  const dx = touches[0].clientX - touches[1].clientX;
+  const dy = touches[0].clientY - touches[1].clientY;
+  return Math.sqrt(dx * dx + dy * dy);
 }
 
 function showScanModal(text: string) {
