@@ -4,6 +4,35 @@ All notable changes to ZapQR will be documented here.
 
 ---
 
+## [1.1.0] - 2026-08-21
+
+### Scanner
+
+- Pinch-to-zoom and button zoom (zoom in/out) for camera viewfinder
+- Flashlight toggle via camera torch API
+- "How it works" section removed for a cleaner scanner view
+- Camera viewfinder changed to 3:4 portrait aspect ratio
+- Footer pinned to bottom of scanner page
+
+### Generator
+
+- QR code type templates: Text, URL, Phone, WiFi, Contact, Email, SMS
+- Type selector dropdown with dynamic form fields per template
+- Error correction level picker (L / M / Q / H)
+- Module style picker (Square / Rounded / Dots)
+- Logo upload with center overlay on generated QR codes
+- Logo forces error correction to High and disables lower options
+- Help tooltips on Colors, Error Correction, Module Style, and Logo sections
+- Default QR codes for all template types (no empty states)
+- History no longer captures default/placeholder QR codes
+
+### App
+
+- Scrollable scanner page matching generate page behavior
+- Updated About page and README with new feature descriptions
+
+---
+
 ## [1.0.0] - 2026-08-20
 
 ### Initial Release
