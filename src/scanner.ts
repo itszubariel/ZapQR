@@ -13,6 +13,8 @@ let maxZoom = 1;
 let useCssZoom = false;
 let pinchStartDist = 0;
 let pinchStartZoom = 1;
+let fileScanner: Html5Qrcode | null = null;
+let fileScanning = false;
 
 export function pauseScanner() {
   scanned = false;
@@ -95,6 +97,16 @@ export function initScanner(container: HTMLElement) {
         </button>
       </div>
       <div class="scan-state" id="scan-state">Point camera at a QR code</div>
+      <button class="scan-upload-btn" id="btn-upload" aria-label="Scan QR code from image">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+        Upload Image
+      </button>
+      <input type="file" id="qr-file-input" accept="image/*" hidden />
+      <div id="qr-file-reader" hidden></div>
       <div class="scan-footer">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12">
           <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
@@ -108,6 +120,7 @@ export function initScanner(container: HTMLElement) {
   cameraReady = false;
   scanner = new Html5Qrcode("qr-reader");
   scanned = false;
+  setupUploadButton();
 
   scanner
     .start(
@@ -308,6 +321,180 @@ function getTouchDistance(touches: TouchList): number {
   const dx = touches[0].clientX - touches[1].clientX;
   const dy = touches[0].clientY - touches[1].clientY;
   return Math.sqrt(dx * dx + dy * dy);
+}
+
+function setupUploadButton() {
+  const btn = document.getElementById("btn-upload");
+  const input = document.getElementById(
+    "qr-file-input",
+  ) as HTMLInputElement | null;
+  if (!btn || !input) return;
+  btn.addEventListener("click", () => input.click());
+  input.addEventListener("change", () => {
+    const file = input.files?.[0];
+    if (!file) return;
+    handleFileScan(file);
+    input.value = "";
+  });
+}
+
+async function handleFileScan(file: File) {
+  if (fileScanning) return;
+  if (!fileScanner) fileScanner = new Html5Qrcode("qr-file-reader");
+  fileScanning = true;
+  const state = document.getElementById("scan-state");
+  if (state) state.textContent = "Decoding image…";
+  try {
+    const text = await decodeFromImage(file);
+    scanned = true;
+    showScanModal(text);
+    addToHistory(text, "scan");
+  } catch {
+    showToast("No QR code found in that image");
+  } finally {
+    fileScanning = false;
+    if (state) state.textContent = "Point camera at a QR code";
+  }
+}
+
+function loadImage(file: File): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(img);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Could not load image"));
+    };
+    img.src = url;
+  });
+}
+
+interface DecodePass {
+  invert?: boolean;
+  scale?: number;
+  maxDim?: number;
+  threshold?: number;
+}
+
+function renderVariant(
+  img: HTMLImageElement,
+  opts: DecodePass,
+): HTMLCanvasElement | null {
+  const w = img.naturalWidth || img.width;
+  const h = img.naturalHeight || img.height;
+  if (!w || !h) return null;
+  let scale = opts.scale ?? 1;
+  if (opts.maxDim) scale = Math.min(scale, opts.maxDim / Math.max(w, h));
+  const c = document.createElement("canvas");
+  c.width = Math.max(1, Math.round(w * scale));
+  c.height = Math.max(1, Math.round(h * scale));
+  const needsPixels = !!opts.invert || opts.threshold != null;
+  const ctx = c.getContext("2d", { willReadFrequently: needsPixels });
+  if (!ctx) return null;
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, c.width, c.height);
+  ctx.drawImage(img, 0, 0, c.width, c.height);
+  if (!needsPixels) return c;
+  const data = ctx.getImageData(0, 0, c.width, c.height);
+  const d = data.data;
+  const t = opts.threshold;
+  for (let i = 0; i < d.length; i += 4) {
+    let v = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+    if (t != null) v = v >= t ? 255 : 0;
+    if (opts.invert) v = 255 - v;
+    d[i] = d[i + 1] = d[i + 2] = v;
+    d[i + 3] = 255;
+  }
+  ctx.putImageData(data, 0, 0);
+  return c;
+}
+
+function canvasToFile(c: HTMLCanvasElement): Promise<File> {
+  return new Promise((resolve, reject) =>
+    c.toBlob((blob) => {
+      if (blob) resolve(new File([blob], "qr.png", { type: "image/png" }));
+      else reject(new Error("Canvas encode failed"));
+    }, "image/png"),
+  );
+}
+
+async function tryDecode(f: File): Promise<string | null> {
+  if (!fileScanner) return null;
+  try {
+    return await fileScanner.scanFile(f, false);
+  } catch {
+    return null;
+  }
+}
+
+function getNativeDetector(): any | null {
+  const BD = (window as any).BarcodeDetector;
+  if (!BD) return null;
+  try {
+    return new BD({ formats: ["qr_code"] });
+  } catch {
+    return null;
+  }
+}
+
+async function tryNativeDecode(
+  detector: any,
+  source: HTMLImageElement | HTMLCanvasElement,
+): Promise<string | null> {
+  try {
+    const codes = await detector.detect(source);
+    const hit = Array.prototype.find.call(codes, (c: any) => c.rawValue);
+    if (hit) return hit.rawValue as string;
+  } catch {
+    /* fall through */
+  }
+  return null;
+}
+
+async function decodeFromImage(file: File): Promise<string> {
+  const detector = getNativeDetector();
+  if (detector) {
+    const nativeImg = await loadImage(file);
+    const viaNative = await tryNativeDecode(detector, nativeImg);
+    if (viaNative) return viaNative;
+  }
+
+  const direct = await tryDecode(file);
+  if (direct) return direct;
+
+  const img = await loadImage(file);
+  const biggest = Math.max(img.naturalWidth, img.naturalHeight);
+
+  const passes: DecodePass[] = [
+    { threshold: 160 },
+    { maxDim: 1600 },
+    { maxDim: 320 },
+    { invert: true },
+    { invert: true, maxDim: 320 },
+    { scale: 2, threshold: 160 },
+    { scale: 3, threshold: 160 },
+    { scale: 3, threshold: 160, invert: true },
+  ];
+  if (biggest < 400) {
+    passes.push({ scale: 3 });
+    passes.push({ invert: true, scale: 3 });
+  }
+
+  for (const pass of passes) {
+    const canvas = renderVariant(img, pass);
+    if (!canvas) continue;
+    if (detector) {
+      const viaNative = await tryNativeDecode(detector, canvas);
+      if (viaNative) return viaNative;
+    }
+    const text = await tryDecode(await canvasToFile(canvas));
+    if (text) return text;
+  }
+  throw new Error("No QR code found in image");
 }
 
 function showScanModal(text: string) {
