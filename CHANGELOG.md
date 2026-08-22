@@ -4,6 +4,25 @@ All notable changes to ZapQR will be documented here.
 
 ---
 
+## [1.2.0] - 2026-08-22
+
+### Scanner
+
+- Scan QR codes from an image via the new Upload Image button
+- Robust image decoding with multi-pass fallbacks (thresholding, inversion, rescaling) for tricky images
+- Native BarcodeDetector used first on platforms that ship it (e.g. Android)
+
+### Generator
+
+- Fixed a critical bug where generated QR codes could not be decoded by any scanner (modules were drawn transposed)
+- Pixel-snapped high-resolution PNG exports (~1100px) that are crisper and scan reliably when uploaded back
+
+### History
+
+- Opening a scanned entry now shows the QR code itself, same as generated entries
+
+---
+
 ## [1.1.0] - 2026-08-21
 
 ### Scanner
