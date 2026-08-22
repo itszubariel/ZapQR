@@ -12,5 +12,5 @@ echo "Building APK..."
 cd android
 JAVA_HOME=/home/zubariel/Downloads/Code/jdk21 ./gradlew assembleRelease
 
-cp app/build/outputs/apk/release/app-release.apk ../apk/ZapQR-v1.1.0.apk
-echo "Done: apk/ZapQR-v1.1.0.apk"
+cp app/build/outputs/apk/release/app-release.apk ../apk/ZapQR-v1.2.0.apk
+echo "Done: apk/ZapQR-v1.2.0.apk"
