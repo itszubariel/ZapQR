@@ -461,60 +461,57 @@ function drawQR(
   const size = qr.modules.size;
   const margin = 2;
   const totalModules = size + margin * 2;
-  const canvasSize = 280;
-  const cellSize = canvasSize / totalModules;
-  const radius = cellSize * 0.35;
+  const targetSize = 280;
+  const renderScale = 4;
+  const deviceSize = targetSize * renderScale;
+  const cell = Math.max(1, Math.floor(deviceSize / totalModules));
+  const used = cell * totalModules;
+  const pad = Math.floor((deviceSize - used) / 2);
 
-  canvas.width = canvasSize;
-  canvas.height = canvasSize;
-  canvas.style.width = canvasSize + "px";
-  canvas.style.height = canvasSize + "px";
+  canvas.width = used;
+  canvas.height = used;
+  canvas.style.width = targetSize + "px";
+  canvas.style.height = targetSize + "px";
 
   const ctx = canvas.getContext("2d")!;
   ctx.fillStyle = currentBg;
-  ctx.fillRect(0, 0, canvasSize, canvasSize);
+  ctx.fillRect(0, 0, used, used);
 
   ctx.fillStyle = currentFg;
 
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
-      if (!qr.modules.get(x, y)) continue;
-      const px = (x + margin) * cellSize;
-      const py = (y + margin) * cellSize;
+      if (!qr.modules.get(y, x)) continue;
+      const px = pad + (x + margin) * cell;
+      const py = pad + (y + margin) * cell;
 
       if (currentModuleStyle === "dots") {
         ctx.beginPath();
-        ctx.arc(
-          px + cellSize / 2,
-          py + cellSize / 2,
-          cellSize / 2,
-          0,
-          Math.PI * 2,
-        );
+        ctx.arc(px + cell / 2, py + cell / 2, cell / 2, 0, Math.PI * 2);
         ctx.fill();
       } else if (currentModuleStyle === "rounded") {
-        roundRect(ctx, px, py, cellSize, cellSize, radius);
+        roundRect(ctx, px, py, cell, cell, cell * 0.35);
       } else {
-        ctx.fillRect(px, py, cellSize, cellSize);
+        ctx.fillRect(px, py, cell, cell);
       }
     }
   }
 
   if (logoImage) {
-    const logoSize = canvasSize * 0.22;
-    const logoX = (canvasSize - logoSize) / 2;
-    const logoY = (canvasSize - logoSize) / 2;
-    const pad = cellSize * 0.5;
+    const logoSize = used * 0.22;
+    const logoX = (used - logoSize) / 2;
+    const logoY = (used - logoSize) / 2;
+    const logoPad = cell * 0.5;
 
     ctx.fillStyle = currentBg;
     ctx.beginPath();
     roundRectPath(
       ctx,
-      logoX - pad,
-      logoY - pad,
-      logoSize + pad * 2,
-      logoSize + pad * 2,
-      cellSize,
+      logoX - logoPad,
+      logoY - logoPad,
+      logoSize + logoPad * 2,
+      logoSize + logoPad * 2,
+      cell,
     );
     ctx.fill();
 
