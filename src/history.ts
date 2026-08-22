@@ -143,29 +143,15 @@ function showQrPopup(text: string, type: string) {
   requestAnimationFrame(() => modal.classList.add("open"));
 
   const body = document.getElementById("modal-qr-body")!;
-  if (type === "generate") {
-    const canvas = document.createElement("canvas");
-    canvas.width = 220;
-    canvas.height = 220;
-    body.appendChild(canvas);
-    QRCode.toCanvas(canvas, text, {
-      width: 220,
-      margin: 2,
-      color: { dark: "#0a0a0a", light: "#f5f2eb" },
-    });
-  } else {
-    body.innerHTML = `
-      <div class="modal-scan-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M3 7V5a2 2 0 0 1 2-2h2"/>
-          <path d="M17 3h2a2 2 0 0 1 2 2v2"/>
-          <path d="M21 17v2a2 2 0 0 1-2 2h-2"/>
-          <path d="M7 21H5a2 2 0 0 1-2-2v-2"/>
-          <line x1="7" y1="12" x2="17" y2="12"/>
-        </svg>
-      </div>
-    `;
-  }
+  const canvas = document.createElement("canvas");
+  canvas.width = 220;
+  canvas.height = 220;
+  body.appendChild(canvas);
+  QRCode.toCanvas(canvas, text, {
+    width: 220,
+    margin: 2,
+    color: { dark: "#0a0a0a", light: "#f5f2eb" },
+  });
 
   const close = () => {
     modal.classList.remove("open");
